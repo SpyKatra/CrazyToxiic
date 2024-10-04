@@ -77,12 +77,13 @@ button:hover {
 
 @keyframes arrow-wiggle {
     0%, 100% {
-        transform: translate(300px, -50%) rotate(270deg); /* Maintenir la flèche en place avec la bonne orientation */
+        transform: translate(300px, -50%) rotate(270deg);
     }
     50% {
-        transform: translate(300px, -50%) rotate(265deg); /* Légère oscillation pour plus de dynamisme */
+        transform: translate(300px, -50%) rotate(265deg);
     }
 }
+
 
 
 /* Modal (popup) container */
@@ -203,6 +204,11 @@ const segmentCount = segments.length;
 const segmentAngle = (2 * Math.PI) / segmentCount;
 let currentAngle = 0;
 let isSpinning = false;
+let currentSpeed = 0; // Vitesse initiale
+const maxSpeed = 0.5; // Vitesse maximale atteinte
+const minSpeed = 0.001; // Vitesse minimale pour arrêter
+const friction = 0.995; // Facteur d'inertie (ralentissement plus lent pour un effet fluide)
+let totalSpins = 0; // Nombre de tours complets effectués
 
 // Fonction pour dessiner la roue
 function drawWheel() {
@@ -228,41 +234,63 @@ function drawWheel() {
         ctx.fillText(segments[i].text, canvas.width / 2 - 15, 10);
         ctx.restore();
     }
+
+    // Dessiner les clous en premier plan
+    for (let i = 0; i < segmentCount; i++) {
+        const angle = currentAngle + i * segmentAngle;
+        const nailX = canvas.width / 2 + Math.cos(angle + segmentAngle) * (canvas.width / 2 - 10);
+        const nailY = canvas.height / 2 + Math.sin(angle + segmentAngle) * (canvas.height / 2 - 10);
+        ctx.beginPath();
+        ctx.arc(nailX, nailY, 8, 0, 2 * Math.PI);
+        ctx.fillStyle = '#fff'; // Clous blancs
+        ctx.shadowColor = '#000';
+        ctx.shadowBlur = 3;
+        ctx.fill();
+        ctx.stroke();
+    }
 }
 
-// Fonction pour faire tourner la roue
+// Fonction pour faire tourner la roue avec inertie et influence des clous
 function spinWheel() {
     if (isSpinning) return;
 
     isSpinning = true;
     resultDiv.textContent = '';
-
-    const spinDuration = 5000; // Temps total du spin en ms
-    const spinSpeed = 0.1; // Vitesse initiale
-    const easing = t => t * t * t; // Fonction de ralentissement
-
-    let startTime = null;
-    let currentSpeed = spinSpeed;
+    currentSpeed = maxSpeed; // La roue démarre à la vitesse maximale
+    totalSpins = 0; // Réinitialiser les tours
 
     // Animer la flèche avec un léger mouvement
     arrow.style.animation = 'arrow-wiggle 0.2s infinite';
 
-    function animate(time) {
-        if (!startTime) startTime = time;
-        const elapsed = time - startTime;
-        const progress = Math.min(elapsed / spinDuration, 1); // Progrès de l'animation
+    function animate() {
+        currentAngle += currentSpeed; // Faire tourner la roue en fonction de la vitesse actuelle
 
-        currentAngle += currentSpeed; // Augmenter l'angle de rotation
-        currentSpeed = spinSpeed * (1 - easing(progress)); // Réduire progressivement la vitesse
+        // Compter les tours complets (chaque fois que l'angle dépasse 2*PI, soit 1 tour)
+        if (currentAngle >= 2 * Math.PI * totalSpins) {
+            totalSpins++; // Incrémenter le nombre de tours complets
+        }
+
+        // Simuler une décélération progressive avec une friction après 3-4 tours
+        if (totalSpins >= 3) {
+            currentSpeed *= friction;
+        }
+
+        // Appliquer un ralentissement supplémentaire aux "clous" (obstacles)
+        if (Math.floor(currentAngle / segmentAngle) !== Math.floor((currentAngle - currentSpeed) / segmentAngle)) {
+            currentSpeed -= 0.005; // Léger ralentissement à chaque clou
+        }
 
         drawWheel();
 
-        if (progress < 1) {
-            requestAnimationFrame(animate); // Continuer l'animation
+        // Vérifier si la roue doit s'arrêter
+        if (currentSpeed > minSpeed) {
+            requestAnimationFrame(animate); // Continuer l'animation si la vitesse est supérieure au minimum
         } else {
             isSpinning = false;
             arrow.style.animation = ''; // Arrêter l'animation de la flèche
-            displayResult();
+
+            // Ajouter un délai de 500ms avant d'afficher le résultat
+            setTimeout(displayResult, 500); // Afficher le résultat après un arrêt naturel
         }
     }
 
@@ -297,6 +325,7 @@ spinButton.addEventListener('click', spinWheel);
 
 // Dessiner la roue initiale
 drawWheel();
+
 
     </script>
 </body>
