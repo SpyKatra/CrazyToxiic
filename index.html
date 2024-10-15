@@ -196,7 +196,7 @@
 
         const segmentCount = segments.length;
         const segmentAngle = (2 * Math.PI) / segmentCount;
-        let currentAngle = 0;
+        let currentAngle = Math.random() * 2 * Math.PI; // Angle initial aléatoire
         let isSpinning = false;
         let currentSpeed = 0;
         const maxSpeed = 0.5;
@@ -248,7 +248,7 @@
 
             isSpinning = true;
             resultDiv.textContent = '';
-            currentSpeed = maxSpeed;
+            currentSpeed = maxSpeed * (0.8 + Math.random() * 0.4); // Vitesse aléatoire entre 80% et 120% de maxSpeed
             totalSpins = 0;
 
             arrow.style.animation = 'arrow-wiggle 0.2s infinite';
